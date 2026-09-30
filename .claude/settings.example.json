@@ -1,0 +1,48 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          { "type": "command", "command": "node \"/ABSOLUTE/PATH/TO/equity-research-office/agent-office/hook.mjs\" 2>/dev/null || true", "async": true, "timeout": 5 }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "node \"/ABSOLUTE/PATH/TO/equity-research-office/agent-office/hook.mjs\" 2>/dev/null || true", "async": true, "timeout": 5 }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "node \"/ABSOLUTE/PATH/TO/equity-research-office/agent-office/hook.mjs\" 2>/dev/null || true", "async": true, "timeout": 5 }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "node \"/ABSOLUTE/PATH/TO/equity-research-office/agent-office/hook.mjs\" 2>/dev/null || true", "async": true, "timeout": 5 }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "node \"/ABSOLUTE/PATH/TO/equity-research-office/agent-office/hook.mjs\" 2>/dev/null || true", "async": true, "timeout": 5 }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "node \"/ABSOLUTE/PATH/TO/equity-research-office/agent-office/hook.mjs\" 2>/dev/null || true", "async": true, "timeout": 5 }
+        ]
+      }
+    ]
+  }
+}

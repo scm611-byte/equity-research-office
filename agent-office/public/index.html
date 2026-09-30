@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sam投資顧問研究室</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #000; --panel: #0b0a08; --panel2: #12100b;
+    --gold: #d4af37; --gold-hi: #f3d77e; --gold-lo: #8a7340; --gold-dim: #5a4b2a;
+    --line: rgba(212, 175, 55, .22); --line-hi: rgba(243, 215, 126, .7);
+    --alert: #e5484d;
+    --serif: "Noto Serif TC", "Songti TC", serif;
+    --latin: "Cormorant Garamond", "Times New Roman", serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); color: var(--gold); font: 14px/1.55 "PingFang TC", "Noto Sans TC", system-ui, sans-serif; }
+  @media (max-width: 980px) { body { overflow: auto; display: block; height: auto; } }
+  header { flex: none; display: flex; gap: 14px; align-items: center; padding: 6px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  header h1 { font-family: var(--serif); font-size: 20px; margin: 0; font-weight: 700; color: var(--gold-hi); letter-spacing: .08em; }
+  header .sub { font-family: var(--latin); font-size: 13px; letter-spacing: .3em; color: var(--gold-lo); }
+  header .mode { font-size: 11px; padding: 2px 10px; border-radius: 99px; border: 1px solid var(--line); color: var(--gold-lo); letter-spacing: .1em; }
+  header .mode.live { border-color: var(--gold); color: var(--gold-hi); }
+  header .spacer { flex: 1; }
+  select, button { font: inherit; font-size: 13px; background: var(--panel2); color: var(--gold); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; cursor: pointer; max-width: 100%; }
+  button:hover, select:hover { border-color: var(--gold); }
+  main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 10px; padding: 8px 10px; }
+  main > section { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+  @media (max-width: 980px) { main { grid-template-columns: 1fr; padding: 10px; } }
+
+  /* ── 場景 ── */
+  #scene { position: relative; flex: 1; min-height: 0; display: grid; gap: 8px;
+    grid-template-rows: minmax(0, 0.8fr) minmax(0, 1.3fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas: "ceo evidence red" "research research writing"; }
+  @media (max-width: 720px) { #scene { flex: none; grid-template-rows: none; grid-template-columns: 1fr; grid-template-areas: "ceo" "evidence" "red" "research" "writing"; } }
+  .dept { display: flex; flex-direction: column; min-height: 0; position: relative; background: linear-gradient(180deg, var(--panel2), var(--panel)); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px 8px; min-width: 0; }
+  .dept::before { content: ""; position: absolute; inset: 4px; border: 1px solid rgba(212, 175, 55, .08); border-radius: 7px; pointer-events: none; }
+  .dept h3 { margin: 0 0 6px; display: flex; align-items: baseline; gap: 10px; font-family: var(--serif); font-weight: 700; font-size: 15px; color: var(--gold-hi); letter-spacing: .12em; }
+  .dept h3 small { font-family: var(--latin); font-size: 11px; font-weight: 500; color: var(--gold-lo); letter-spacing: .25em; }
+  .seats { flex: 1; min-height: 0; display: grid; gap: 6px; align-content: space-evenly; justify-items: center; }
+  #d-research .seats { grid-template-columns: repeat(3, minmax(0, 1fr)); align-content: space-evenly; }
+  @media (max-width: 520px) { #d-research .seats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  .seat { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 34px 4px 2px; border-radius: 8px; min-width: 0; transition: background .4s; }
+  .seat.active { background: radial-gradient(circle at 50% 45%, rgba(212, 175, 55, .13), transparent 70%); }
+  .avatar { position: relative; width: clamp(36px, 9.5vh, 104px); height: clamp(36px, 9.5vh, 104px); border-radius: 50%; padding: 3px;
+    background: conic-gradient(from 210deg, #6d5a2c, #f3d77e, #a8862e, #f3d77e, #6d5a2c);
+    transition: filter .5s, box-shadow .5s; }
+  .avatar svg { display: block; width: 100%; height: 100%; border-radius: 50%; }
+  .seat.idle .avatar { filter: grayscale(.6) brightness(.55); }
+  .seat.done .avatar { filter: grayscale(.2) brightness(.8); }
+  .seat.active .avatar { animation: glow 1.8s ease-in-out infinite; }
+  .seat.review .avatar { box-shadow: 0 0 0 2px var(--gold-hi), 0 0 26px rgba(243, 215, 126, .5); }
+  @keyframes glow {
+    0%, 100% { box-shadow: 0 0 0 2px rgba(243, 215, 126, .9), 0 0 16px rgba(243, 215, 126, .35); transform: scale(1); }
+    50% { box-shadow: 0 0 0 2px rgba(243, 215, 126, 1), 0 0 32px rgba(243, 215, 126, .7); transform: scale(1.04); }
+  }
+  .badge { position: absolute; right: 0; bottom: 2px; width: 24px; height: 24px; border-radius: 50%; display: none; align-items: center; justify-content: center;
+    background: #0b0a08; border: 1.5px solid var(--gold); color: var(--gold-hi); font-size: 13px; font-weight: 700; }
+  .seat.done .badge { display: flex; }
+  .nm { margin-top: 4px; font-family: var(--serif); font-size: 16px; font-weight: 700; color: var(--gold-hi); letter-spacing: .06em; }
+  .en { font-family: var(--latin); font-size: 11px; color: var(--gold-lo); letter-spacing: .2em; text-transform: uppercase; }
+  .rl { margin-top: 2px; font-size: 12px; color: var(--gold); opacity: .85; }
+  .seat.idle .nm, .seat.idle .rl { opacity: .6; }
+
+  .bubble { position: absolute; top: 2px; left: 50%; transform: translateX(-50%) translateY(4px); max-width: calc(100% - 4px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    background: #17140c; border: 1px solid var(--gold); color: var(--gold-hi); border-radius: 14px; padding: 4px 12px; font-size: 12px;
+    opacity: 0; transition: opacity .3s, transform .3s; pointer-events: none; }
+  .bubble::after { content: ""; position: absolute; left: 50%; bottom: -5px; width: 8px; height: 8px; background: #17140c; border-right: 1px solid var(--gold); border-bottom: 1px solid var(--gold); transform: translateX(-50%) rotate(45deg); }
+  .seat.active .bubble, .seat.review .bubble { opacity: 1; transform: translateX(-50%) translateY(0); overflow: visible; }
+  .bubble .txt { display: inline-block; max-width: 180px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+  .dots { display: none; margin-left: 6px; }
+  .seat.active .dots { display: inline-flex; gap: 3px; vertical-align: middle; }
+  .dots b { width: 4px; height: 4px; border-radius: 50%; background: var(--gold-hi); animation: dot 1.2s infinite; }
+  .dots b:nth-child(2) { animation-delay: .2s; } .dots b:nth-child(3) { animation-delay: .4s; }
+  @keyframes dot { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+
+  .task { margin-top: 10px; font-family: var(--serif); font-size: 13px; color: #0b0a08; background: linear-gradient(90deg, #b8942f, #f3d77e, #b8942f); padding: 3px 12px; border-radius: 4px; letter-spacing: .06em; }
+  .task:empty { display: none; }
+  .pending { position: absolute; top: 44px; right: calc(50% - 70px); background: var(--alert); color: #fff; font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 99px; box-shadow: 0 0 12px rgba(229, 72, 77, .6); display: none; }
+  .pending.on { display: block; animation: pop .4s ease-out; }
+  @keyframes pop { from { transform: scale(.4); } to { transform: scale(1); } }
+
+  .doc { position: fixed; z-index: 10; width: 22px; height: 28px; pointer-events: none; border-radius: 2px;
+    background: linear-gradient(160deg, #fff8e0, #e7d59b); box-shadow: 0 0 14px rgba(243, 215, 126, .8);
+    background-image: repeating-linear-gradient(180deg, transparent 0 6px, rgba(90, 75, 42, .5) 6px 7px), linear-gradient(160deg, #fff8e0, #e7d59b); }
+  #empty { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 4px; background: rgba(0, 0, 0, .78); border-radius: 10px; z-index: 5; text-align: center; padding: 16px; }
+  #empty.on { display: flex; }
+  #empty b { font-family: var(--serif); font-size: 18px; color: var(--gold-hi); }
+  #empty span { font-size: 13px; color: var(--gold-lo); }
+
+  /* ── 播放列 ── */
+  .playbar { flex: none; display: flex; align-items: center; gap: 10px; margin-top: 8px; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; }
+  .playbar input[type=range] { flex: 1; min-width: 0; accent-color: var(--gold); }
+  .playbar .time { font-variant-numeric: tabular-nums; color: var(--gold-lo); font-size: 12px; white-space: nowrap; }
+  #live.on { border-color: var(--gold); color: var(--gold-hi); }
+
+  /* ── 側欄 ── */
+  aside { display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; overflow-y: auto; }
+  .card { flex: none; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; }
+  .card:last-child { flex: 1; min-height: 120px; display: flex; flex-direction: column; }
+  .card h2 { margin: 0 0 8px; font-family: var(--serif); font-size: 13px; color: var(--gold-lo); font-weight: 500; letter-spacing: .15em; }
+  #taskSide { font-family: var(--serif); font-size: 18px; font-weight: 700; color: var(--gold-hi); }
+  .steps { display: flex; flex-wrap: wrap; gap: 4px; }
+  .steps span { font-size: 11px; padding: 2px 7px; border-radius: 4px; border: 1px solid var(--line); color: var(--gold-dim); }
+  .steps span.active { border-color: var(--gold-hi); color: #0b0a08; background: var(--gold-hi); }
+  .steps span.done { border-color: var(--gold-lo); color: var(--gold); }
+  .steps span.review { border-color: var(--alert); color: #fff; background: var(--alert); }
+  .roles { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+  .roles li { display: grid; grid-template-columns: 8px 110px 1fr; gap: 8px; align-items: center; font-size: 13px; }
+  .roles .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold-dim); }
+  .roles .active .dot { background: var(--gold-hi); box-shadow: 0 0 8px var(--gold-hi); }
+  .roles .done .dot { background: var(--gold-lo); }
+  .roles .review .dot { background: var(--alert); }
+  .roles .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .roles .who small { color: var(--gold-lo); margin-left: 4px; }
+  .roles .act { color: var(--gold-lo); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #log { list-style: none; margin: 0; padding: 0; flex: 1; min-height: 0; overflow-y: auto; font-size: 12px; display: grid; gap: 3px; }
+  #log li { display: grid; grid-template-columns: 42px 1fr; gap: 6px; }
+  #log .t { color: var(--gold-dim); font-variant-numeric: tabular-nums; }
+  #log b { font-weight: 600; color: var(--gold-hi); }
+  #log span { color: var(--gold); }
+  .empty { color: var(--gold-dim); }
+  .dept { overflow: hidden; }
+  @media (max-height: 900px) { .en { display: none; } .rl { display: none; } .seat { padding-top: 28px; } .nm { font-size: 14px; margin-top: 2px; } .rl { font-size: 11px; } }
+  @media (max-height: 560px) { .rl { display: none; } .seat { padding-top: 24px; } .bubble { font-size: 11px; padding: 2px 10px; } .task { margin-top: 4px; font-size: 12px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Sam投資顧問研究室</h1>
+  <span class="sub">EQUITY RESEARCH</span>
+  <span id="mode" class="mode">—</span>
+  <span class="spacer"></span>
+  <select id="sessionSel" aria-label="選擇紀錄"></select>
+</header>
+<main>
+  <section>
+    <div id="scene"><div id="empty"><b>尚未收到事件</b><span>啟動 /equity-research-tw 後會即時顯示；或從右上角改看 Demo</span></div></div>
+    <div class="playbar">
+      <button id="play" aria-label="播放/暫停">▶</button>
+      <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="時間軸">
+      <span class="time" id="time">00:00 / 00:00</span>
+      <select id="speed" aria-label="播放速度">
+        <option value="0.5">0.5×</option><option value="1" selected>1×</option>
+        <option value="2">2×</option><option value="5">5×</option><option value="10">10×</option>
+      </select>
+      <button id="live" hidden>LIVE</button>
+    </div>
+  </section>
+  <aside>
+    <div class="card"><h2>目前任務</h2><div id="taskSide">—</div></div>
+    <div class="card"><h2>流程進度</h2><div class="steps" id="steps"></div></div>
+    <div class="card"><h2>成員狀態</h2><ul class="roles" id="roles"></ul></div>
+    <div class="card"><h2>事件紀錄</h2><ul id="log"></ul></div>
+  </aside>
+</main>
+<script>
+// ───────────────────────── 成員與部門（要換人只改這裡） ─────────────────────────
+const ROLE_DEF = {
+  ceo:     { name: 'Sam',       en: 'Sam',             role: 'Orchestrator・統籌' },
+  s1:      { name: '川普',       en: 'Donald Trump',    role: 'S1 市場・總經與政策' },
+  s2:      { name: '馬斯克',     en: 'Elon Musk',       role: 'S2 競爭・產業顛覆' },
+  s3:      { name: '祖克柏',     en: 'Mark Zuckerberg', role: 'S3 同業比較' },
+  s4:      { name: '彼得林奇',   en: 'Peter Lynch',     role: 'S4 財務・基本面' },
+  s5:      { name: '巴菲特',     en: 'Warren Buffett',  role: 'S5 估值・內在價值' },
+  s6:      { name: '傑西李佛摩', en: 'Jesse Livermore', role: 'S6 論點與風險' },
+  curator: { name: '貝佐斯',     en: 'Jeff Bezos',      role: 'Agent 2・證據彙整' },
+  s7:      { name: '黃仁勳',     en: 'Jensen Huang',    role: 'S7 撰稿・Synthesis' },
+  redteam: { name: '查理芒格',   en: 'Charlie Munger',  role: 'Agent 3・紅隊（反過來想）' },
+};
+const DEPTS = [
+  { id: 'ceo',      name: '執行長室', en: 'Executive',  members: ['ceo'] },
+  { id: 'evidence', name: '證據室',   en: 'Evidence',   members: ['curator'] },
+  { id: 'red',      name: '紅隊室',   en: 'Red Team',   members: ['redteam'] },
+  { id: 'research', name: '研究部',   en: 'Research',   members: ['s1', 's2', 's3', 's4', 's5', 's6'] },
+  { id: 'writing',  name: '撰稿部',   en: 'Synthesis',  members: ['s7'] },
+];
+const STEP_ORDER = ['ceo', 's1', 's2', 's3', 's4', 's5', 's6', 'curator', 's7', 'redteam'];
+const STEP_LABEL = { ceo: 'Step 0', s1: 'S1', s2: 'S2', s3: 'S3', s4: 'S4', s5: 'S5', s6: 'S6', curator: 'Agent 2', s7: 'S7', redteam: 'Agent 3' };
+const HANDOFF = { market: 's1', competitive: 's2', peer: 's3', financial: 's4', valuation: 's5', thesis: 's6' };
+
+// ───────────────────────── 肖像（向量插畫，依人物特徵繪製） ─────────────────────────
+const LOOK = {
+  s1:      { skin: '#eeb58a', bg: '#4a1418', top: 'suit', suit: '#1b2747', shirt: '#ffffff', tie: '#c8102e', longTie: true, hair: 'trump', hairC: ['#f6dc8c', '#c99a3b'], brow: '#d6b060', mouth: 'purse', rx: 20 },
+  s2:      { skin: '#efc3a2', bg: '#16222e', top: 'tee',  suit: '#161616', hair: 'musk', hairC: ['#5a4230', '#1e140d'], brow: '#3a2a1e', mouth: 'smile', rx: 20.5, ry: 24 },
+  s3:      { skin: '#f3cfb3', bg: '#14233f', top: 'tee',  suit: '#7d8187', hair: 'zuck', hairC: ['#9a7248', '#4a321e'], brow: '#6b4a2e', mouth: 'firm', rx: 18.5 },
+  s4:      { skin: '#f1c3a6', bg: '#1b2c1f', top: 'suit', suit: '#1f2b45', shirt: '#eef2f8', tie: '#355f9e', hair: 'lynch', hairC: ['#ffffff', '#c9c9c9'], brow: '#d0d0d0', mouth: 'smile', old: true },
+  s5:      { skin: '#f2c1a8', bg: '#2a2013', top: 'suit', suit: '#26304a', shirt: '#ffffff', tie: '#7a1f2b', hair: 'buffett', hairC: ['#f4f4f4', '#bdbdbd'], brow: '#b8b8b8', mouth: 'smile', glasses: 'wire', old: true, rx: 20 },
+  s6:      { skin: '#ecc6a4', bg: '#2b2418', top: 'vest', suit: '#2c2c2e', shirt: '#f4efe2', tie: '#3b2f4a', hair: 'livermore', hairC: ['#3a2e24', '#0f0b08'], brow: '#2a2018', mouth: 'firm', rx: 18.5 },
+  curator: { skin: '#e9b793', bg: '#10262c', top: 'open', suit: '#1a2233', shirt: '#f5f7fb', hair: 'bald', brow: '#6b5040', mouth: 'grin' },
+  s7:      { skin: '#e6bb92', bg: '#0e2a16', top: 'leather', suit: '#121212', hair: 'jensen', hairC: ['#c6c6c6', '#4e4e4e'], brow: '#3a3a3a', mouth: 'smile' },
+  redteam: { skin: '#f0c4a8', bg: '#3a1214', top: 'suit', suit: '#3a3d44', shirt: '#f2f2f2', tie: '#1d2433', hair: 'munger', hairC: ['#e6e6e6', '#a8a8a8'], brow: '#9a9a9a', mouth: 'firm', glasses: 'thick', old: true },
+};
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16);
+  const f = (v) => Math.max(0, Math.min(255, v + amt));
+  return '#' + ((f(n >> 16) << 16) | (f((n >> 8) & 255) << 8) | f(n & 255)).toString(16).padStart(6, '0');
+}
+const HAIR = {
+  trump: `<path d="M39 54 C35 32 48 23 62 23 C79 23 88 34 83 54 C81 43 77 38 70 37 C60 36 48 38 41 52Z"/>
+          <path d="M86 42 C82 27 64 20 47 26 C38 30 35 38 36 46 C44 36 57 32 71 34 C79 35 83 38 86 42Z"/>
+          <path d="M39 50 C38 56 39 60 41 63 L43 62 C42 56 42 52 43 47Z"/><path d="M81 50 C82 56 81 60 79 63 L77 62 C78 56 78 52 77 47Z"/>`,
+  musk: `<path d="M40 50 C38 32 50 25 61 25 C74 25 83 33 80 50 C77 40 71 36 62 36 C53 36 45 39 42 50Z"/>`,
+  zuck: `<path d="M41 47 C40 32 50 28 60 28 C71 28 80 32 79 47 C76 38 70 35 60 35 C50 35 44 38 41 47Z"/>`
+      + [44, 50, 56, 62, 68, 74].map((x, i) => `<circle cx="${x}" cy="${33 + (i % 2) * 1.5}" r="3" opacity=".85"/>`).join(''),
+  lynch: `<path d="M38 54 C33 31 48 21 62 22 C79 23 88 33 83 54 C80 42 72 36 62 36 C52 36 44 40 40 54Z"/>
+          <path d="M42 36 C51 25 71 24 82 34 C71 30 57 30 42 36Z" opacity=".9"/>`,
+  buffett: `<path d="M43 44 C43 33 51 29 61 29 C71 29 79 34 78 44 C74 38 67 36 60 36 C53 36 47 39 43 44Z" opacity=".85"/>
+            <path d="M38 44 C36 51 38 58 41 63 L44 61 C43 55 43 49 44 43Z"/><path d="M82 44 C84 51 82 58 79 63 L76 61 C77 55 77 49 76 43Z"/>`,
+  livermore: `<path d="M40 49 C39 32 49 26 60 26 C71 26 81 32 80 49 C77 38 70 33 60 33 C50 33 43 38 40 49Z"/>`,
+  jensen: `<path d="M40 50 C37 33 48 25 60 25 C73 25 83 32 80 50 C78 41 73 36 65 35 C57 34 48 36 42 48Z"/>`,
+  munger: `<path d="M38 45 C36 51 38 58 41 64 L44 61 C43 55 43 49 44 43Z"/><path d="M82 45 C84 51 82 58 79 64 L76 61 C77 55 77 49 76 43Z"/>`,
+  bald: '',
+};
+function portrait(id) {
+  if (id === 'ceo') return samPortrait();
+  const L = LOOK[id], u = id, sk = L.skin, skD = shade(sk, -30), rx = L.rx || 19, ry = L.ry || 23;
+  const suitD = shade(L.suit, -22), suitL = shade(L.suit, 28);
+  let s = `<svg viewBox="0 0 120 120" aria-hidden="true"><defs>
+    <radialGradient id="bg-${u}" cx="50%" cy="30%" r="80%"><stop offset="0" stop-color="${L.bg}"/><stop offset="1" stop-color="#030303"/></radialGradient>
+    <radialGradient id="sk-${u}" cx="42%" cy="38%" r="70%"><stop offset="0" stop-color="${shade(sk, 16)}"/><stop offset=".7" stop-color="${sk}"/><stop offset="1" stop-color="${skD}"/></radialGradient>
+    <linearGradient id="su-${u}" x1="0" y1="0" x2=".3" y2="1"><stop offset="0" stop-color="${suitL}"/><stop offset="1" stop-color="${suitD}"/></linearGradient>
+    ${L.hairC ? `<linearGradient id="hr-${u}" x1="0" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="${L.hairC[0]}"/><stop offset="1" stop-color="${L.hairC[1]}"/></linearGradient>` : ''}
+    </defs><rect width="120" height="120" fill="url(#bg-${u})"/>
+    <path d="M3 124 C7 97 30 86 60 86 C90 86 113 97 117 124Z" fill="url(#su-${u})"/>
+    <path d="M51 70 L51 89 Q60 95 69 89 L69 70Z" fill="${skD}"/>`;
+  // 服裝
+  if (L.top === 'suit' || L.top === 'vest') {
+    s += `<path d="M47 87 L60 110 L73 87 Q60 93 47 87Z" fill="${L.shirt}"/>
+      <path d="M52 86 L60 95 L56 99Z" fill="${shade(L.shirt, -18)}"/><path d="M68 86 L60 95 L64 99Z" fill="${shade(L.shirt, -18)}"/>
+      <path d="M57 93 L63 93 L65 ${L.longTie ? 122 : 110} L60 ${L.longTie ? 126 : 114} L55 ${L.longTie ? 122 : 110}Z" fill="${L.tie}"/>
+      <path d="M56.5 90 L63.5 90 L62.5 94 L57.5 94Z" fill="${shade(L.tie, -25)}"/>`;
+    if (L.top === 'vest') s += `<path d="M49 98 L60 114 L71 98 L73 124 L47 124Z" fill="${shade(L.suit, 12)}"/>
+      <circle cx="60" cy="117" r="1" fill="#c9a44a"/><circle cx="60" cy="122" r="1" fill="#c9a44a"/><path d="M84 101 L92 99 L93 102.5 L85 104Z" fill="#f4efe2"/><path d="M85 101 L88 98.5 L90 100.5Z" fill="#ffffff"/>`;
+    s += `<path d="M45 86 L59 112 L48 101 L41 92Z" fill="${suitD}"/><path d="M75 86 L61 112 L72 101 L79 92Z" fill="${suitD}"/>`;
+  } else if (L.top === 'open') {
+    s += `<path d="M47 87 L60 106 L73 87 Q60 92 47 87Z" fill="${L.shirt}"/><path d="M60 98 L60 106" stroke="${skD}" stroke-width="3"/>
+      <path d="M50 85 L60 99 L55 101 L46 89Z" fill="${shade(L.shirt, -14)}"/><path d="M70 85 L60 99 L65 101 L74 89Z" fill="${shade(L.shirt, -14)}"/>
+      <path d="M44 87 L57 114 L46 102 L40 92Z" fill="${suitD}"/><path d="M76 87 L63 114 L74 102 L80 92Z" fill="${suitD}"/>`;
+  } else if (L.top === 'tee') {
+    s += `<path d="M49 86 Q60 97 71 86" fill="none" stroke="${shade(L.suit, -30)}" stroke-width="2.5"/>
+      <path d="M22 104 Q30 96 40 94" fill="none" stroke="${shade(L.suit, 22)}" stroke-width="1" opacity=".5"/>`;
+  } else if (L.top === 'leather') {
+    s += `<path d="M48 87 Q60 101 72 87Z" fill="#050505"/>
+      <path d="M46 86 L58 110 L45 106 L36 93Z" fill="#1e1e1e"/><path d="M74 86 L62 110 L75 106 L84 93Z" fill="#1e1e1e"/>
+      <path d="M39 94 L46 105" stroke="#5a5a5a" stroke-width="1" opacity=".7"/><path d="M81 94 L74 105" stroke="#5a5a5a" stroke-width="1" opacity=".7"/>
+      <path d="M14 108 Q24 94 40 90" fill="none" stroke="#ffffff" stroke-width="1.5" opacity=".18"/>
+      <path d="M106 108 Q96 94 80 90" fill="none" stroke="#ffffff" stroke-width="1.5" opacity=".12"/>
+      <path d="M62 112 L64 124" stroke="#8a8a8a" stroke-width="1" opacity=".6"/>`;
+  }
+  // 頭
+  s += `<ellipse cx="${60 - rx}" cy="55" rx="3.6" ry="6" fill="${skD}"/><ellipse cx="${60 + rx}" cy="55" rx="3.6" ry="6" fill="${skD}"/>
+    <ellipse cx="60" cy="54" rx="${rx}" ry="${ry}" fill="url(#sk-${u})"/>
+    <path d="M${60 - rx + 3} 62 Q60 ${54 + ry + 4} ${60 + rx - 3} 62" fill="none" stroke="${skD}" stroke-width="1" opacity=".35"/>`;
+  if (L.hair === 'bald' || L.hair === 'munger') s += `<ellipse cx="53" cy="36" rx="8" ry="3.5" fill="#fff" opacity=".22"/>`;
+  if (L.hairC) s += `<g fill="url(#hr-${u})">${HAIR[L.hair]}</g>`;
+  if (L.hair === 'livermore') s += `<path d="M58 26.5 Q57 30 57.5 33" stroke="#000" stroke-width="1" opacity=".6" fill="none"/><path d="M47 31 Q56 27 70 29" stroke="#fff" stroke-width="1.2" opacity=".2" fill="none"/>`;
+  if (L.hair === 'jensen') s += [46, 52, 58, 64, 70].map((x) => `<path d="M${x} 36 Q${x + 2} 30 ${x + 5} 28" stroke="#e8e8e8" stroke-width=".8" opacity=".45" fill="none"/>`).join('');
+  if (L.old) s += `<path d="M50 37 Q60 35 70 37" stroke="${skD}" stroke-width=".8" opacity=".45" fill="none"/><path d="M52 40 Q60 38.5 68 40" stroke="${skD}" stroke-width=".7" opacity=".35" fill="none"/>
+    <path d="M49 63 Q51 67 53 69" stroke="${skD}" stroke-width=".8" opacity=".45" fill="none"/><path d="M71 63 Q69 67 67 69" stroke="${skD}" stroke-width=".8" opacity=".45" fill="none"/>`;
+  // 五官
+  const bw = L.old ? 2.8 : 2.2;
+  s += `<path d="M46.5 46.5 Q52 43.5 57 45.8" stroke="${L.brow}" stroke-width="${bw}" stroke-linecap="round" fill="none"/>
+    <path d="M63 45.8 Q68 43.5 73.5 46.5" stroke="${L.brow}" stroke-width="${bw}" stroke-linecap="round" fill="none"/>
+    <ellipse cx="52" cy="51.5" rx="2.4" ry="1.7" fill="#241810"/><ellipse cx="68" cy="51.5" rx="2.4" ry="1.7" fill="#241810"/>
+    <circle cx="52.8" cy="50.9" r=".6" fill="#fff"/><circle cx="68.8" cy="50.9" r=".6" fill="#fff"/>
+    <path d="M60 52 Q57.5 60 58 62 Q60 63.6 62.8 62.2" stroke="${skD}" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+    <circle cx="49" cy="61" r="4" fill="#e0806a" opacity=".12"/><circle cx="71" cy="61" r="4" fill="#e0806a" opacity=".12"/>`;
+  const M = {
+    smile: `<path d="M53.5 67.5 Q60 72.5 66.5 67.5" stroke="#8a4a42" stroke-width="1.7" fill="none" stroke-linecap="round"/>`,
+    grin: `<path d="M53 67 Q60 74 67 67 Q60 69.5 53 67Z" fill="#fff" stroke="#8a4a42" stroke-width="1.3"/>`,
+    firm: `<path d="M54 68.5 Q60 69.6 66 68.5" stroke="#8a4a42" stroke-width="1.7" fill="none" stroke-linecap="round"/>`,
+    purse: `<path d="M55 68.5 Q60 66.6 65 68.5 Q60 71 55 68.5Z" fill="#b0685e"/>`,
+  };
+  s += M[L.mouth];
+  if (L.glasses === 'wire') s += `<g fill="none" stroke="#4a3624" stroke-width="1.4"><rect x="45.5" y="47" width="13" height="9.5" rx="3.5"/><rect x="61.5" y="47" width="13" height="9.5" rx="3.5"/><path d="M58.5 50.5 Q60 49.5 61.5 50.5"/></g>`;
+  if (L.glasses === 'thick') s += `<g fill="rgba(255,255,255,.06)" stroke="#0a0a0a" stroke-width="2.8"><rect x="44.5" y="46" width="14" height="11" rx="3"/><rect x="61.5" y="46" width="14" height="11" rx="3"/><path d="M58.5 50 L61.5 50"/></g>`;
+  return s + '</svg>';
+}
+function samPortrait() {
+  return `<svg viewBox="0 0 120 120" aria-hidden="true"><defs>
+    <radialGradient id="bg-sam" cx="50%" cy="30%" r="80%"><stop offset="0" stop-color="#3a2e12"/><stop offset="1" stop-color="#030303"/></radialGradient>
+    <linearGradient id="gd-sam" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3d77e"/><stop offset=".5" stop-color="#b8942f"/><stop offset="1" stop-color="#f3d77e"/></linearGradient></defs>
+    <rect width="120" height="120" fill="url(#bg-sam)"/>
+    <path d="M3 124 C7 97 30 86 60 86 C90 86 113 97 117 124Z" fill="#0c0c0c" stroke="url(#gd-sam)" stroke-width="1.5"/>
+    <path d="M47 87 L60 108 L73 87" fill="none" stroke="url(#gd-sam)" stroke-width="1.2"/>
+    <ellipse cx="60" cy="54" rx="19" ry="23" fill="#0c0c0c" stroke="url(#gd-sam)" stroke-width="1.5"/>
+    <text x="60" y="63" text-anchor="middle" font-family="Cormorant Garamond, Times New Roman, serif" font-size="26" font-weight="600" fill="url(#gd-sam)">S</text></svg>`;
+}
+
+// ───────────────────────── 事件 → 狀態 ─────────────────────────
+function initState() {
+  return {
+    task: '', current: null, pending: 0, drafts: 0, finished: false, transferSeq: 0, transfer: null, log: [],
+    roles: Object.fromEntries(Object.keys(ROLE_DEF).map((k) => [k, { status: 'idle', act: '' }])),
+  };
+}
+function pushLog(st, e, role, msg) {
+  st.log.push({ ts: e.ts, role, msg });
+  if (st.log.length > 80) st.log.shift();
+}
+function activate(st, e, id, act) {
+  if (st.current === id) { setAct(st, e, act); return; }
+  if (st.current) {
+    const prev = st.roles[st.current];
+    if (prev.status === 'active') { prev.status = st.current === 'ceo' ? 'idle' : 'done'; prev.act = ''; }
+    st.transfer = { from: st.current, to: id };
+    st.transferSeq++;
+  }
+  st.current = id;
+  st.roles[id].status = 'active';
+  st.roles[id].act = act || '作業中';
+  pushLog(st, e, id, '上工：' + (act || '作業中'));
+}
+function setAct(st, e, act) {
+  if (!st.current || !act) return;
+  st.roles[st.current].act = act;
+  pushLog(st, e, st.current, act);
+}
+function parseTask(text) {
+  const m = (text || '').match(/([一-龥A-Za-z]{2,10})\s*[（(]?\s*(\d{4})\b/);
+  return m ? `${m[1]} ${m[2]}` : '';
+}
+const base = (p) => (p || '').split('/').pop();
+
+function apply(st, e) {
+  const ev = e.event, tool = e.tool, inp = e.input || {}, fp = inp.file_path || '';
+
+  if (ev === 'UserPromptSubmit') {
+    if (/equity-research-tw/.test(e.prompt || '')) {
+      Object.assign(st, initState(), { transferSeq: st.transferSeq });
+      st.task = parseTask(e.prompt) || '台股個股研究';
+      activate(st, e, 'ceo', '確認輸入（Step 0）');
+    }
+    return;
+  }
+  if (ev === 'SubagentStart') { activate(st, e, 'redteam', '獨立 context 審查初稿'); return; }
+  if (ev === 'SubagentStop') { if (st.current === 'redteam') activate(st, e, 's7', '逐項回應紅隊挑戰'); return; }
+  if (ev === 'Stop') {
+    if (st.drafts > 0 && !st.finished) {
+      const cur = st.current && st.roles[st.current];
+      if (cur && cur.status === 'active') { cur.status = 'done'; cur.act = ''; }
+      st.transfer = { from: st.current || 's7', to: 'ceo' }; st.transferSeq++;
+      st.current = null; st.finished = true; st.pending = 1;
+      st.roles.ceo.status = 'review'; st.roles.ceo.act = '待審：報告完稿';
+      pushLog(st, e, 'ceo', '完稿送達，待審');
+    }
+    return;
+  }
+  if (ev === 'PostToolUse') {
+    if (tool === 'AskUserQuestion') {
+      const t = parseTask(e.answers);
+      if (t) { st.task = t; pushLog(st, e, 'ceo', '確認標的：' + t); }
+    }
+    if ((tool === 'Agent' || tool === 'Task') && st.current === 'redteam') activate(st, e, 's7', '逐項回應紅隊挑戰');
+    return;
+  }
+  if (ev !== 'PreToolUse') return;
+
+  if (tool === 'Read') {
+    const h = fp.match(/handoffs\/(\w+)-handoff\.md$/);
+    if (h && HANDOFF[h[1]]) return activate(st, e, HANDOFF[h[1]], '讀取 Handoff 定義');
+    if (/evidence-curator\.md$/.test(fp)) return activate(st, e, 'curator', '彙整 Evidence Pool');
+    if (/s7-synthesis\.md$/.test(fp)) return activate(st, e, 's7', '讀取撰稿規範');
+    if (/red-team-agent\.md$/.test(fp)) return setAct(st, e, '準備紅隊審查');
+    if (/data-researcher\.md$/.test(fp)) return setAct(st, e, '讀取檢索方法');
+    if (/personas\//.test(fp)) return setAct(st, e, '參考人格：' + base(fp));
+    if (/final_report_template/.test(fp)) return setAct(st, e, '載入報告骨架');
+    return setAct(st, e, '閱讀 ' + base(fp));
+  }
+  if (tool === 'WebSearch') return setAct(st, e, '查：' + (inp.query || ''));
+  if (tool === 'WebFetch') { let host = ''; try { host = new URL(inp.url).host; } catch {} return setAct(st, e, '讀網頁 ' + host); }
+  if (tool === 'Bash') {
+    const c = inp.command || '';
+    if (/cross_validate_tw_data/.test(c)) return setAct(st, e, '交叉驗證數字');
+    if (/validate_equity_report|check_number_consistency/.test(c)) return setAct(st, e, '品質檢查');
+    return setAct(st, e, '執行指令');
+  }
+  if (tool === 'Write' || tool === 'Edit') {
+    if (/equity_research/.test(fp)) {
+      if (st.current !== 's7' && st.current !== 'redteam') activate(st, e, 's7', '寫入初稿');
+      st.drafts++;
+      return setAct(st, e, st.roles.redteam.status === 'done' ? '依紅隊意見修訂' : (tool === 'Write' ? '寫入初稿' : '續寫段落'));
+    }
+    return setAct(st, e, '寫檔 ' + base(fp));
+  }
+  if (tool === 'Agent' || tool === 'Task') return activate(st, e, 'redteam', '獨立 context 審查初稿');
+  if (tool === 'AskUserQuestion') { if (!st.current) activate(st, e, 'ceo', '詢問使用者'); else setAct(st, e, '詢問使用者'); }
+}
+
+// ───────────────────────── Demo 事件 ─────────────────────────
+function demoEvents() {
+  const L = [];
+  let t = Date.UTC(2026, 8, 29, 1, 0, 0);
+  const add = (d, e) => { t += d; L.push({ ts: t, session: 'demo', ...e }); };
+  const pre = (d, tool, input) => add(d, { event: 'PreToolUse', tool, input });
+  const SK = '~/.claude/skills/equity-research-tw/reference/';
+  add(0, { event: 'UserPromptSubmit', prompt: '/equity-research-tw' });
+  pre(1200, 'AskUserQuestion', {});
+  add(2500, { event: 'PostToolUse', tool: 'AskUserQuestion', answers: '台積電 2330｜Standard｜可比乘數' });
+  const mods = [
+    ['market', ['台積電 晶圓代工 市占 2026', 'AI 加速器 先進製程 需求']],
+    ['competitive', ['三星 2nm 良率 2026', 'Intel Foundry 18A 客戶']],
+    ['peer', ['聯電 世界先進 本益比', 'GlobalFoundries EV/EBITDA']],
+    ['financial', ['台積電 2026Q2 財報 毛利率', '台積電 月營收 8月']],
+    ['valuation', ['台積電 目標價 外資', '台積電 共識 EPS 2027']],
+    ['thesis', ['台積電 海外廠 毛利稀釋', '台積電 關稅 風險']],
+  ];
+  for (const [m, qs] of mods) {
+    pre(1800, 'Read', { file_path: SK + `handoffs/${m}-handoff.md` });
+    if (m === 'market') pre(900, 'Read', { file_path: SK + 'data-researcher.md' });
+    if (m === 'competitive') pre(900, 'Read', { file_path: SK + 'personas/competitive-analyst.md' });
+    for (const q of qs) pre(1600, 'WebSearch', { query: q });
+    if (['financial', 'valuation', 'peer'].includes(m)) pre(1500, 'Bash', { command: 'python3 scripts/cross_validate_tw_data.py 2330' });
+  }
+  pre(2000, 'Read', { file_path: SK + 'evidence-curator.md' });
+  pre(1500, 'Bash', { command: 'python3 scripts/check_number_consistency.py' });
+  pre(1600, 'WebSearch', { query: '台積電 目標價 最新 調升' });
+  pre(1600, 'WebFetch', { url: 'https://mops.twse.com.tw/mops/web/t05st10' });
+  pre(1500, 'WebSearch', { query: '晶圓代工 市占排名 最新一季' });
+  pre(2000, 'Read', { file_path: SK + 's7-synthesis.md' });
+  pre(1000, 'Read', { file_path: '~/.claude/skills/equity-research-tw/templates/final_report_template.md' });
+  const out = 'outputs/台積電_2330_equity_research_20260929.md';
+  pre(1800, 'Write', { file_path: out });
+  for (let i = 0; i < 3; i++) pre(1800, 'Edit', { file_path: out });
+  pre(1500, 'Read', { file_path: SK + 'red-team-agent.md' });
+  pre(1200, 'Agent', { description: '紅隊審查初稿', subagent_type: 'general-purpose' });
+  add(300, { event: 'SubagentStart', agent_type: 'general-purpose' });
+  pre(2200, 'Read', { file_path: out });
+  pre(2200, 'WebSearch', { query: '台積電 空方論點 產能過剩' });
+  add(2500, { event: 'SubagentStop', agent_type: 'general-purpose' });
+  for (let i = 0; i < 2; i++) pre(1800, 'Edit', { file_path: out });
+  pre(1600, 'Bash', { command: 'python3 scripts/validate_equity_report.py ' + out });
+  add(2200, { event: 'Stop' });
+  return L;
+}
+
+// ───────────────────────── 畫面 ─────────────────────────
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function buildScene() {
+  const html = DEPTS.map((d) => `<div class="dept" id="d-${d.id}" style="grid-area:${d.id}">
+      <h3>${d.name}<small>${d.en.toUpperCase()}</small></h3>
+      <div class="seats">${d.members.map((id) => `
+        <div class="seat idle" id="seat-${id}">
+          <div class="bubble"><span class="txt"></span><i class="dots"><b></b><b></b><b></b></i></div>
+          <div class="avatar">${portrait(id)}<span class="badge">✓</span></div>
+          <div class="nm">${esc(ROLE_DEF[id].name)}</div>
+          <div class="en">${esc(ROLE_DEF[id].en)}</div>
+          <div class="rl">${esc(ROLE_DEF[id].role)}</div>
+          ${id === 'ceo' ? '<div class="task" id="taskChip"></div><div class="pending" id="pending"></div>' : ''}
+        </div>`).join('')}</div></div>`).join('');
+  $('scene').insertAdjacentHTML('beforeend', html);
+}
+function renderScene() {
+  for (const id of Object.keys(ROLE_DEF)) {
+    const r = state.roles[id], el = $('seat-' + id);
+    el.className = 'seat ' + r.status;
+    el.querySelector('.txt').textContent = r.act || '';
+  }
+  $('taskChip').textContent = state.task ? '任務｜' + state.task : '';
+  $('pending').textContent = '待審 ' + state.pending;
+  $('pending').classList.toggle('on', state.pending > 0);
+  $('empty').classList.toggle('on', !events.length);
+}
+function flyDoc(from, to) {
+  const a = $('seat-' + from)?.querySelector('.avatar'), b = $('seat-' + to)?.querySelector('.avatar');
+  if (!a || !b || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+  const x0 = ra.left + ra.width / 2 - 11, y0 = ra.top + ra.height / 2 - 14;
+  const x1 = rb.left + rb.width / 2 - 11, y1 = rb.top + rb.height / 2 - 14;
+  const doc = document.createElement('div');
+  doc.className = 'doc';
+  document.body.appendChild(doc);
+  doc.animate([
+    { transform: `translate(${x0}px, ${y0}px) rotate(-8deg) scale(.6)`, opacity: 0 },
+    { transform: `translate(${(x0 + x1) / 2}px, ${Math.min(y0, y1) - 60}px) rotate(6deg) scale(1.1)`, opacity: 1, offset: .5 },
+    { transform: `translate(${x1}px, ${y1}px) rotate(0) scale(.6)`, opacity: 0 },
+  ], { duration: 1000, easing: 'ease-in-out' }).onfinish = () => doc.remove();
+  doc.style.left = '0'; doc.style.top = '0';
+}
+function renderSide() {
+  $('taskSide').textContent = state.task || '—';
+  $('steps').innerHTML = STEP_ORDER.map((id) => `<span class="${state.roles[id].status}">${STEP_LABEL[id]}</span>`).join('')
+    + `<span class="${state.pending ? 'review' : ''}">待審</span>`;
+  $('roles').innerHTML = STEP_ORDER.map((id) => {
+    const r = state.roles[id];
+    const txt = r.act || { idle: '待命', done: '已交件', active: '作業中', review: '待審' }[r.status];
+    return `<li class="${r.status}"><span class="dot"></span><span class="who">${esc(ROLE_DEF[id].name)}<small>${STEP_LABEL[id]}</small></span><span class="act">${esc(txt)}</span></li>`;
+  }).join('');
+  const t0 = events[0]?.ts || 0;
+  $('log').innerHTML = state.log.slice().reverse().map((l) =>
+    `<li><span class="t">${fmt(l.ts - t0)}</span><span><b>${esc(ROLE_DEF[l.role].name)}</b> ${esc(l.msg)}</span></li>`).join('')
+    || '<li class="empty">—</li>';
+}
+
+// ───────────────────────── 播放控制 ─────────────────────────
+const params = new URLSearchParams(location.search);
+let mode = params.has('demo') ? 'demo' : params.get('session') ? 'replay' : 'live';
+let events = [], state = initState(), applied = 0, cursor = 0, playing = false, follow = false, seenSeq = 0;
+let speed = 1, liveSession = null;
+
+const t0 = () => events[0]?.ts ?? 0;
+const t1 = () => events.at(-1)?.ts ?? 0;
+const fmt = (ms) => { const s = Math.max(0, Math.round(ms / 1000)); return String(s / 60 | 0).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
+
+function recompute(full) {
+  let changed = false;
+  if (full) { state = initState(); applied = 0; changed = true; }
+  while (applied < events.length && events[applied].ts <= cursor) { apply(state, events[applied++]); changed = true; }
+  if (full) seenSeq = state.transferSeq;
+  else if (state.transferSeq !== seenSeq) {
+    seenSeq = state.transferSeq;
+    if (state.transfer?.from && state.transfer?.to) flyDoc(state.transfer.from, state.transfer.to);
+  }
+  if (changed) { renderScene(); renderSide(); }
+}
+function seekFrac(f) {
+  const prev = cursor;
+  cursor = t0() + f * (t1() - t0());
+  recompute(cursor < prev);
+}
+function syncUI() {
+  const span = t1() - t0();
+  $('scrub').value = span ? Math.round(((cursor - t0()) / span) * 1000) : 1000;
+  $('time').textContent = `${fmt(cursor - t0())} / ${fmt(span)}`;
+  $('play').textContent = playing ? '❚❚' : '▶';
+  $('live').classList.toggle('on', follow);
+}
+let lastUrlSync = 0;
+function syncUrl(force) {
+  if (mode === 'live' || (!force && performance.now() - lastUrlSync < 1000)) return;
+  lastUrlSync = performance.now();
+  const span = t1() - t0();
+  params.set('t', span ? ((cursor - t0()) / span).toFixed(3) : '0');
+  params.set('speed', playing ? String(speed) : '0');
+  history.replaceState(null, '', '?' + params.toString());
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = now - last; last = now;
+  if (follow) { if (cursor !== t1()) { cursor = t1(); recompute(false); } }
+  else if (playing && events.length) {
+    cursor += dt * speed;
+    if (cursor >= t1()) { cursor = t1(); playing = false; syncUrl(true); }
+    recompute(false);
+    syncUrl(false);
+  }
+  syncUI();
+  requestAnimationFrame(frame);
+}
+
+$('play').onclick = () => {
+  follow = false;
+  if (!playing && cursor >= t1()) { cursor = t0(); recompute(true); }
+  playing = !playing; syncUrl(true);
+};
+$('scrub').oninput = (e) => { follow = false; playing = false; seekFrac(e.target.value / 1000); syncUrl(true); };
+$('speed').onchange = (e) => { speed = Number(e.target.value); syncUrl(true); };
+$('live').onclick = () => { follow = !follow; playing = false; if (follow) recompute(false); };
+$('sessionSel').onchange = (e) => {
+  const v = e.target.value, q = new URLSearchParams();
+  if (v === '__demo') q.set('demo', '1'); else if (v !== '__live') q.set('session', v);
+  location.search = q.toString();
+};
+
+async function loadSessions() {
+  let list = [];
+  try { list = await (await fetch('/api/sessions')).json(); } catch {}
+  const opts = [['__live', '即時（最新 session）'], ['__demo', 'Demo：台積電 2330 模擬流程']]
+    .concat(list.map((s) => [s.id, `${new Date(s.last).toLocaleString('zh-TW', { hour12: false })}｜${s.prompt || s.id.slice(0, 8)}（${s.count}）`]));
+  const cur = mode === 'demo' ? '__demo' : mode === 'replay' ? params.get('session') : '__live';
+  $('sessionSel').innerHTML = opts.map(([v, t]) => `<option value="${esc(v)}" ${v === cur ? 'selected' : ''}>${esc(t)}</option>`).join('');
+  return list;
+}
+
+function applyUrlPlayback() {
+  const sp = params.get('speed'), t = params.get('t');
+  if (sp !== null) {
+    const n = Number(sp);
+    playing = n > 0;
+    if (n > 0) { speed = n; if ([...$('speed').options].some((o) => o.value === String(n))) $('speed').value = String(n); }
+  } else playing = true;
+  cursor = t0();
+  recompute(true);
+  if (t !== null) seekFrac(Math.max(0, Math.min(1, Number(t))));
+  if (playing && cursor >= t1()) { cursor = t0(); recompute(true); }
+}
+
+(async function boot() {
+  buildScene();
+  const list = await loadSessions();
+  $('mode').textContent = { demo: 'DEMO', replay: '回放', live: 'LIVE' }[mode];
+  $('mode').classList.toggle('live', mode === 'live');
+  if (mode === 'demo') { events = demoEvents(); applyUrlPlayback(); }
+  else if (mode === 'replay') {
+    events = await (await fetch('/api/log?session=' + encodeURIComponent(params.get('session')))).json();
+    applyUrlPlayback();
+  } else {
+    $('live').hidden = false; follow = true;
+    liveSession = list[0]?.id || null;
+    if (liveSession) events = await (await fetch('/api/log?session=' + encodeURIComponent(liveSession))).json();
+    cursor = t1(); recompute(true);
+    const es = new EventSource('/stream');
+    es.onmessage = (m) => {
+      const e = JSON.parse(m.data);
+      if (e.session !== liveSession) {
+        const isStart = e.event === 'UserPromptSubmit' && /equity-research-tw/.test(e.prompt || '');
+        if (!isStart && liveSession) return;
+        liveSession = e.session; events = []; cursor = e.ts; recompute(true); loadSessions();
+      }
+      events.push(e);
+      if (!follow) return;
+      cursor = e.ts;
+      recompute(false);
+    };
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
